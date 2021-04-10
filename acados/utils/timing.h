@@ -76,6 +76,15 @@ typedef struct acados_timer_
     double time;
 } acados_timer;
 
+#elif defined(__STM32__)
+
+#include "stdint.h"
+
+typedef struct acados_timer_
+{
+    uint32_t tick_start;
+} acados_timer;
+
 #else
 
 /* Use POSIX clock_gettime() for timing on non-Windows machines. */

@@ -82,6 +82,20 @@ void acados_tic(acados_timer* t)
 
 real_t acados_toc(acados_timer* t) { return ds1401_tic_read() - t->time; }
 
+#elif defined(__STM32__)
+
+uint32_t HAL_GetTick(void); // forward declaration
+
+void acados_tic(acados_timer* t)
+{
+    t->tick_start = HAL_GetTick();
+}
+
+real_t acados_toc(acados_timer* t) {
+	uint32_t tick_diff = HAL_GetTick() - t->tick_start;
+	return (real_t)tick_diff / 1000.;
+}
+
 #else
 
 #if (__STDC_VERSION__ >= 199901L) && !(defined __MINGW32__ || defined __MINGW64__) // C99 Mode
