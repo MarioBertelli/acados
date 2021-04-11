@@ -43,7 +43,8 @@ project(acados LANGUAGES C CXX)
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 
-set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
+# Position Independent code does not work with STM32
+#set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
 
 ### Defaults
 
