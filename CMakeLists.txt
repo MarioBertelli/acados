@@ -52,9 +52,9 @@ set(ACADOS_INSTALL_DIR "${PROJECT_SOURCE_DIR}" CACHE PATH  "Installation path to
 if ("${CMAKE_HOST_SYSTEM_PROCESSOR}" STREQUAL "aarch64")
   set(BLASFEO_TARGET "ARMV8A_ARM_CORTEX_A57" CACHE STRING "BLASFEO Target architecture")
 else()
-  set(BLASFEO_TARGET "X64_AUTOMATIC" CACHE STRING "BLASFEO Target architecture")
+    set(BLASFEO_TARGET "GENERIC" CACHE STRING "BLASFEO Target architecture")
 endif()
-set(HPIPM_TARGET "X64_AUTOMATIC" CACHE STRING "HPIPM Target architecture")
+set(HPIPM_TARGET "GENERIC" CACHE STRING "HPIPM Target architecture")
 set(LA "HIGH_PERFORMANCE" CACHE STRING "Linear algebra optimization level")
 
 if (CMAKE_SYSTEM_NAME MATCHES "Windows")
