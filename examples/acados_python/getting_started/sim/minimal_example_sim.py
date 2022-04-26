@@ -1,3 +1,4 @@
+# -*- coding: future_fstrings -*-
 #
 # Copyright 2019 Gianluca Frison, Dimitris Kouzoupis, Robin Verschueren,
 # Andrea Zanelli, Niels van Duijkeren, Jonathan Frey, Tommaso Sartor,
@@ -42,10 +43,10 @@ import matplotlib.pyplot as plt
 
 sim = AcadosSim()
 
-# export model 
+# export model
 model = export_pendulum_ode_model()
 
-# set model_name 
+# set model_name
 sim.model = model
 
 Tf = 0.1
@@ -57,10 +58,10 @@ N = 200
 sim.solver_options.T = Tf
 # set options
 sim.solver_options.integrator_type = 'IRK'
-sim.solver_options.num_stages = 4
+sim.solver_options.num_stages = 3
 sim.solver_options.num_steps = 3
 sim.solver_options.newton_iter = 3 # for implicit integrator
-
+sim.solver_options.collocation_type = "GAUSS_RADAU_IIA"
 
 # create
 acados_integrator = AcadosSimSolver(sim)
@@ -85,10 +86,10 @@ for i in range(N):
     simX[i+1,:] = acados_integrator.get("x")
 
 if status != 0:
-    raise Exception('acados returned status {}. Exiting.'.format(status))
+    raise Exception(f'acados returned status {status}.')
 
 S_forw = acados_integrator.get("S_forw")
-print("S_forw, sensitivities of simulaition result wrt x,u:\n", S_forw)
+print("S_forw, sensitivities of simulation result wrt x,u:\n", S_forw)
 
 # plot results
 plot_pendulum(np.linspace(0, Tf, N+1), 10, np.zeros((N, nu)), simX, latexify=False)

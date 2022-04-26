@@ -5,10 +5,45 @@
     "acados_include_path": [
         "str"
     ],
+    "cython_include_dirs": [
+        "str"
+    ],
     "model": {
          "name" : [
             "str"
-        ]
+        ],
+        "dyn_ext_fun_type" : [
+            "str"
+        ],
+        "dyn_generic_source" : [
+            "str"
+        ],
+        "dyn_impl_dae_fun" : [
+            "str"
+        ],
+        "dyn_impl_dae_fun_jac" : [
+            "str"
+        ],
+        "dyn_impl_dae_jac" : [
+            "str"
+        ],
+        "dyn_disc_fun_jac_hess" : [
+            "str"
+        ],
+        "dyn_disc_fun_jac" : [
+            "str"
+        ],
+        "dyn_disc_fun" : [
+            "str"
+        ],
+        "gnsf" : {
+            "nontrivial_f_LO": [
+                "int"
+            ],
+            "purely_linear": [
+                "int"
+            ]
+        }
     },
     "parameter_values": [
         "ndarray",
@@ -373,6 +408,15 @@
         "cost_type_e": [
             "str"
         ],
+        "cost_ext_fun_type_0": [
+            "str"
+        ],
+        "cost_ext_fun_type": [
+            "str"
+        ],
+        "cost_ext_fun_type_e": [
+            "str"
+        ],
         "Vu_0": [
             "ndarray",
             [
@@ -633,6 +677,9 @@
         "hessian_approx": [
             "str"
         ],
+        "hpipm_mode": [
+            "str"
+        ],
         "regularize_method": [
             "str"
         ],
@@ -640,6 +687,9 @@
             "str"
         ],
         "nlp_solver_type": [
+            "str"
+        ],
+        "collocation_type": [
             "str"
         ],
         "globalization": [
@@ -666,19 +716,43 @@
         "alpha_reduction": [
             "float"
         ],
-        "sim_method_num_stages": [
+        "line_search_use_sufficient_descent": [
             "int"
         ],
-        "sim_method_num_steps": [
+        "globalization_use_SOC": [
             "int"
+        ],
+        "full_step_dual": [
+            "int"
+        ],
+        "eps_sufficient_descent": [
+            "float"
+        ],
+        "sim_method_num_stages": [
+            "ndarray",
+            [
+                "N"
+            ]
+        ],
+        "sim_method_num_steps": [
+            "ndarray",
+            [
+                "N"
+            ]
         ],
         "sim_method_newton_iter": [
             "int"
         ],
         "sim_method_jac_reuse": [
-            "bool"
+            "ndarray",
+            [
+                "N"
+            ]
         ],
         "qp_solver_cond_N": [
+            "int"
+        ],
+        "qp_solver_warm_start": [
             "int"
         ],
         "qp_solver_tol_stat": [
@@ -696,6 +770,12 @@
         "qp_solver_iter_max": [
             "int"
         ],
+        "qp_solver_cond_ric_alg": [
+            "int"
+        ],
+        "qp_solver_ric_alg": [
+            "int"
+        ],
         "nlp_solver_tol_stat": [
             "float"
         ],
@@ -709,6 +789,9 @@
             "float"
         ],
         "nlp_solver_max_iter": [
+            "int"
+        ],
+        "nlp_solver_ext_qp_res": [
             "int"
         ],
         "print_level": [

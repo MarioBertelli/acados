@@ -36,12 +36,26 @@ SOURCES = [ 'acados_sim_solver_sfunction_{{ model.name }}.c ', ...
             {%- if  solver_options.integrator_type == 'ERK' %}
             '{{ model.name }}_model/{{ model.name }}_expl_ode_fun.c ', ...
             '{{ model.name }}_model/{{ model.name }}_expl_vde_forw.c ',...
-            {%- if solver_options.hessian_approx == 'EXACT' %}
-            {%- endif %}
-            {%- else %}
+                {%- if solver_options.hessian_approx == 'EXACT' %}
+            '{{ model.name }}_model/{{ model.name }}_expl_ode_hess.c ',...
+                {%- endif %}
+        {%- elif solver_options.integrator_type == "IRK" %}
             '{{ model.name }}_model/{{ model.name }}_impl_dae_fun.c ', ...
             '{{ model.name }}_model/{{ model.name }}_impl_dae_fun_jac_x_xdot_z.c ', ...
             '{{ model.name }}_model/{{ model.name }}_impl_dae_jac_x_xdot_u_z.c ', ...
+                {%- if solver_options.hessian_approx == 'EXACT' %}
+            '{{ model.name }}_model/{{ model.name }}_impl_dae_hess.c ',...
+                {%- endif %}
+            {%- elif solver_options.integrator_type == "GNSF" %}
+                {% if model.gnsf.purely_linear != 1 %}
+            '{{ model.name }}_model/{{ model.name }}_gnsf_phi_fun.c '
+            '{{ model.name }}_model/{{ model.name }}_gnsf_phi_fun_jac_y.c '
+            '{{ model.name }}_model/{{ model.name }}_gnsf_phi_jac_y_uhat.c '
+                {% if model.gnsf.nontrivial_f_LO == 1 %}
+            '{{ model.name }}_model/{{ model.name }}_gnsf_f_lo_fun_jac_x1k1uz.c '
+                {%- endif %}
+                {%- endif %}
+            '{{ model.name }}_model/{{ model.name }}_gnsf_get_matrices_fun.c '
             {%- endif %}
           ];
 

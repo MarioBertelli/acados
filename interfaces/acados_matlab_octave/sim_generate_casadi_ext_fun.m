@@ -79,14 +79,6 @@ else
     return;
 end
 
-if ispc
-    ldext = '.lib';
-else
-    ldext = '.so';
-end
-
-lib_name = ['lib', model_name];
-
 if (strcmp(opts_struct.codgen_model, 'true'))
 	for k=1:length(c_files)
 		movefile(c_files{k}, opts_struct.output_dir);
@@ -98,11 +90,44 @@ for k=1:length(c_files)
 	c_files_path{k} = fullfile(opts_struct.output_dir, c_files{k});
 end
 
-if ispc
-    % mbuild(c_files_path{:}, '-output', lib_name, 'CFLAGS="$CFLAGS"', 'LDTYPE="-shared"', ['LDEXT=', ldext]);
-    system(['gcc -O2 -fPIC -shared ', strjoin(c_files_path, ' '), ' -o ', [lib_name, ldext]]);
-else
-    system(['gcc -O2 -fPIC -shared ', strjoin(c_files_path, ' '), ' -o ', [lib_name, ldext]]);
+% check compiler
+use_msvc = false;
+if ~is_octave()
+    mexOpts = mex.getCompilerConfigurations('C', 'Selected');
+    if contains(mexOpts.ShortName, 'MSVC')
+        use_msvc = true;
+    end
 end
 
-movefile([lib_name, ldext], fullfile(opts_struct.output_dir, [lib_name, ldext]));
+ext_fun_compile_flags = opts_struct.ext_fun_compile_flags;
+
+if use_msvc
+    % get env vars for MSVC
+    msvc_env = fullfile(mexOpts.Location, 'VC\Auxiliary\Build\vcvars64.bat');
+    assert(isfile(msvc_env), 'Cannot find definition of MSVC env vars.');
+
+    % assemble build command for MSVC
+    out_obj_dir = [fullfile(opts_struct.output_dir), '\\'];
+    out_lib = fullfile(opts_struct.output_dir, [model_name, '.dll']);
+    build_cmd = sprintf('cl /O2 /EHsc /LD %s /Fo%s /Fe%s', ...
+        strjoin(unique(c_files_path), ' '), out_obj_dir, out_lib);
+
+    compile_command = sprintf('"%s" & %s', msvc_env, build_cmd);
+else % gcc
+    if ispc
+        out_lib = fullfile(opts_struct.output_dir, ['lib', model_name, '.lib']);
+    else
+        out_lib = fullfile(opts_struct.output_dir, ['lib', model_name, '.so']);
+    end
+    compile_command = ['gcc ', ext_fun_compile_flags, ' -fPIC -shared ', strjoin(unique(c_files_path), ' '), ' -o ', out_lib];
+end
+
+compile_status = system(compile_command);
+if compile_status ~= 0
+    error('Compilation of model functions failed! %s %s\n%s\n\n', ...
+        'Please check the compile command above and the flags therein closely.',...
+        'Compile command was:', compile_command);
+end
+
+end
+

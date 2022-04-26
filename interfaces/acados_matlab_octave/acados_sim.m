@@ -78,12 +78,11 @@ classdef acados_sim < handle
                 compile_interface = false;
             elseif strcmp(obj.opts_struct.compile_interface, 'auto')
                 if is_octave()
-                    compile_interface = ~exist( fullfile(obj.opts_struct.output_dir,...
-                        '/sim_create.mex'), 'file');
+                    extension = '.mex';
                 else
-                    compile_interface = ~exist( fullfile(obj.opts_struct.output_dir,...
-                        '/sim_create.mexa64'), 'file');
+                    extension = ['.' mexext];
                 end
+                compile_interface = ~exist(fullfile(obj.opts_struct.output_dir, ['/sim_create', extension]), 'file');
             else
                 obj.model_struct.cost_type
                 error('acados_sim: field compile_interface is , supported values are: true, false, auto');
@@ -93,7 +92,7 @@ classdef acados_sim < handle
                 sim_compile_interface(obj.opts_struct);
             end
 
-            obj.model_struct = detect_dims_sim(obj.model_struct)
+            obj.model_struct = detect_dims_sim(obj.model_struct);
 
             % create C object
             obj.C_sim = sim_create(obj.model_struct, obj.opts_struct);
@@ -122,8 +121,8 @@ classdef acados_sim < handle
         end
 
 
-        function solve(obj)
-            sim_solve(obj.C_sim);
+        function status = solve(obj)
+            status = sim_solve(obj.C_sim);
         end
 
 

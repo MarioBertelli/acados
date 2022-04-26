@@ -53,7 +53,7 @@
 * config
 ************************************************/
 
-sim_config *sim_config_create(sim_solver_plan plan)
+sim_config *sim_config_create(sim_solver_plan_t plan)
 {
     /* calculate_size & malloc & assign */
 
@@ -79,7 +79,7 @@ sim_config *sim_config_create(sim_solver_plan plan)
         case LIFTED_IRK:
             sim_lifted_irk_config_initialize_default(solver_config);
             break;
-		case INVALID_SIM_SOLVER:
+        case INVALID_SIM_SOLVER:
             printf("\nerror: sim_config_create: forgot to initialize plan->sim_solver\n");
             exit(1);
             break;
@@ -154,6 +154,10 @@ void sim_dims_get_from_attr(sim_config *config, void *dims, const char *field, i
     else if (!strcmp(field, "u"))
     {
         sim_dims_get(config, dims, "nu", &dims_out[0]);
+    }
+    else if (!strcmp(field, "T"))
+    {
+        dims_out[0] = 1;
     }
     else if (!strcmp(field, "S_adj"))
     {

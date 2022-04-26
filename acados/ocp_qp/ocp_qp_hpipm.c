@@ -96,14 +96,8 @@ void *ocp_qp_hpipm_opts_assign(void *config_, void *dims_, void *raw_memory)
 }
 
 
-
-void ocp_qp_hpipm_opts_initialize_default(void *config_, void *dims_, void *opts_)
+static void ocp_qp_hpipm_opts_overwrite_mode_opts(ocp_qp_hpipm_opts *opts)
 {
-    // ocp_qp_dims *dims = dims_;
-    ocp_qp_hpipm_opts *opts = opts_;
-
-//    d_ocp_qp_ipm_arg_set_default(SPEED, opts->hpipm_opts);
-    d_ocp_qp_ipm_arg_set_default(BALANCE, opts->hpipm_opts);
     // overwrite some default options
     opts->hpipm_opts->res_g_max = 1e-6;
     opts->hpipm_opts->res_b_max = 1e-8;
@@ -114,6 +108,18 @@ void ocp_qp_hpipm_opts_initialize_default(void *config_, void *dims_, void *opts
     opts->hpipm_opts->alpha_min = 1e-8;
     opts->hpipm_opts->mu0 = 1e0;
     opts->hpipm_opts->var_init_scheme = 1;
+}
+
+
+void ocp_qp_hpipm_opts_initialize_default(void *config_, void *dims_, void *opts_)
+{
+    // ocp_qp_dims *dims = dims_;
+    ocp_qp_hpipm_opts *opts = opts_;
+
+//    d_ocp_qp_ipm_arg_set_default(SPEED, opts->hpipm_opts);
+    d_ocp_qp_ipm_arg_set_default(BALANCE, opts->hpipm_opts);
+
+    ocp_qp_hpipm_opts_overwrite_mode_opts(opts);
 
     return;
 }
@@ -133,7 +139,26 @@ void ocp_qp_hpipm_opts_set(void *config_, void *opts_, const char *field, void *
 {
     ocp_qp_hpipm_opts *opts = opts_;
 
-    d_ocp_qp_ipm_arg_set((char *) field, value, opts->hpipm_opts);
+    const char *mode;
+    if (!strcmp(field, "hpipm_mode"))
+    {
+        mode = (const char *) value;
+        if (!strcmp(mode, "BALANCE"))
+            d_ocp_qp_ipm_arg_set_default(BALANCE, opts->hpipm_opts);
+        else if (!strcmp(mode, "SPEED"))
+            d_ocp_qp_ipm_arg_set_default(SPEED, opts->hpipm_opts);
+        else if (!strcmp(mode, "SPEED_ABS"))
+            d_ocp_qp_ipm_arg_set_default(SPEED_ABS, opts->hpipm_opts);
+        else if (!strcmp(mode, "ROBUST"))
+            d_ocp_qp_ipm_arg_set_default(ROBUST, opts->hpipm_opts);
+
+        ocp_qp_hpipm_opts_overwrite_mode_opts(opts);
+
+    }
+    else
+    {
+        d_ocp_qp_ipm_arg_set((char *) field, value, opts->hpipm_opts);
+    }
 
     return;
 }
@@ -210,6 +235,11 @@ void ocp_qp_hpipm_memory_get(void *config_, void *mem_, const char *field, void*
         int *tmp_ptr = value;
         *tmp_ptr = mem->iter;
     }
+    else if (!strcmp(field, "status"))
+    {
+        int *tmp_ptr = value;
+        *tmp_ptr = mem->status;
+    }
     else
     {
         printf("\nerror: ocp_qp_hpipm_memory_get: field %s not available\n", field);
@@ -265,9 +295,8 @@ int ocp_qp_hpipm(void *config_, void *qp_in_, void *qp_out_, void *opts_, void *
     // solve ipm
     acados_tic(&qp_timer);
     // print_ocp_qp_in(qp_in);
-    int hpipm_status;
     d_ocp_qp_ipm_solve(qp_in, qp_out, opts->hpipm_opts, mem->hpipm_workspace);
-    d_ocp_qp_ipm_get_status(mem->hpipm_workspace, &hpipm_status);
+    d_ocp_qp_ipm_get_status(mem->hpipm_workspace, &mem->status);
 
     info->solve_QP_time = acados_toc(&qp_timer);
     info->interface_time = 0;  // there are no conversions for hpipm
@@ -279,14 +308,23 @@ int ocp_qp_hpipm(void *config_, void *qp_in_, void *qp_out_, void *opts_, void *
     mem->iter = mem->hpipm_workspace->iter;
 
     // check exit conditions
-    int acados_status = hpipm_status;
-    if (hpipm_status == 0) acados_status = ACADOS_SUCCESS;
-    if (hpipm_status == 1) acados_status = ACADOS_MAXITER;
-    if (hpipm_status == 2) acados_status = ACADOS_MINSTEP;
+    int acados_status = mem->status;
+    if (mem->status == 0) acados_status = ACADOS_SUCCESS;
+    if (mem->status == 1) acados_status = ACADOS_MAXITER;
+    if (mem->status == 2) acados_status = ACADOS_MINSTEP;
 
     return acados_status;
 }
 
+
+void ocp_qp_hpipm_memory_reset(void *config_, void *qp_in_, void *qp_out_, void *opts_, void *mem_, void *work_)
+{
+    ocp_qp_in *qp_in = qp_in_;
+    // reset memory
+    // void *ocp_qp_hpipm_memory_assign(void *config_, void *dims_, void *opts_, void *raw_memory)
+    printf("acados: reset hpipm_mem\n");
+    ocp_qp_hpipm_memory_assign(config_, qp_in->dim, opts_, mem_);
+}
 
 
 void ocp_qp_hpipm_eval_sens(void *config_, void *param_qp_in_, void *sens_qp_out_, void *opts_, void *mem_, void *work_)
@@ -333,6 +371,7 @@ void ocp_qp_hpipm_config_initialize_default(void *config_)
     config->memory_get = &ocp_qp_hpipm_memory_get;
     config->workspace_calculate_size = &ocp_qp_hpipm_workspace_calculate_size;
     config->evaluate = &ocp_qp_hpipm;
+    config->memory_reset = &ocp_qp_hpipm_memory_reset;
     config->eval_sens = &ocp_qp_hpipm_eval_sens;
 
     return;

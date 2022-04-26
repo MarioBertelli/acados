@@ -36,7 +36,7 @@ function ocp_generate_c_code(obj)
     if ~exist(fullfile(pwd,'c_generated_code'), 'dir')
         mkdir(fullfile(pwd, 'c_generated_code'))
     end
-    %% generate C code for CasADi functions
+    %% generate C code for CasADi functions / copy external functions
     % dynamics
     if (strcmp(obj.model_struct.dyn_type, 'explicit'))
         generate_c_code_explicit_ode(obj.acados_ocp_nlp_json.model);
@@ -52,6 +52,10 @@ function ocp_generate_c_code(obj)
     elseif (strcmp(obj.model_struct.dyn_type, 'discrete'))
         generate_c_code_disc_dyn(obj.acados_ocp_nlp_json.model);
     end
+    if strcmp(obj.acados_ocp_nlp_json.model.dyn_ext_fun_type, 'generic')
+        copyfile( fullfile(pwd, obj.acados_ocp_nlp_json.model.dyn_generic_source),...
+            fullfile(pwd, 'c_generated_code', [obj.model_struct.name '_model']));
+    end
 
     % cost
     if (strcmp(obj.model_struct.cost_type, 'nonlinear_ls') || ...
@@ -62,6 +66,18 @@ function ocp_generate_c_code(obj)
             strcmp(obj.model_struct.cost_type_0, 'ext_cost') || strcmp(obj.model_struct.cost_type_e, 'ext_cost'))
             generate_c_code_ext_cost( obj.model_struct, obj.opts_struct,...
               fullfile(pwd, 'c_generated_code', [obj.model_struct.name '_cost']) );
+    end
+    if (strcmp(obj.acados_ocp_nlp_json.cost.cost_ext_fun_type_0, 'generic'))
+        copyfile(fullfile(pwd, obj.acados_ocp_nlp_json.cost.cost_source_ext_cost_0), ...
+            fullfile(pwd, 'c_generated_code', [obj.model_struct.name '_cost']));
+    end
+    if (strcmp(obj.acados_ocp_nlp_json.cost.cost_ext_fun_type, 'generic'))
+        copyfile(fullfile(pwd, obj.acados_ocp_nlp_json.cost.cost_source_ext_cost), ...
+            fullfile(pwd, 'c_generated_code', [obj.model_struct.name '_cost']));
+    end
+    if (strcmp(obj.acados_ocp_nlp_json.cost.cost_ext_fun_type_e, 'generic'))
+        copyfile(fullfile(pwd, obj.acados_ocp_nlp_json.cost.cost_source_ext_cost_e), ...
+            fullfile(pwd, 'c_generated_code', [obj.model_struct.name '_cost']));
     end
     % constraints
     if ((strcmp(obj.model_struct.constr_type, 'bgh') && obj.model_struct.dim_nh > 0) || ...
@@ -77,8 +93,14 @@ function ocp_generate_c_code(obj)
 
     %% remove CasADi objects from model
     model.name = obj.acados_ocp_nlp_json.model.name;
+    model.dyn_ext_fun_type = obj.acados_ocp_nlp_json.model.dyn_ext_fun_type;
+    model.dyn_generic_source = obj.acados_ocp_nlp_json.model.dyn_generic_source;
+    model.dyn_disc_fun_jac_hess = obj.acados_ocp_nlp_json.model.dyn_disc_fun_jac_hess;
+    model.dyn_disc_fun_jac = obj.acados_ocp_nlp_json.model.dyn_disc_fun_jac;
+    model.dyn_disc_fun = obj.acados_ocp_nlp_json.model.dyn_disc_fun;
+    model.gnsf.nontrivial_f_LO = obj.acados_ocp_nlp_json.model.gnsf.nontrivial_f_LO;
+    model.gnsf.purely_linear = obj.acados_ocp_nlp_json.model.gnsf.purely_linear;
     obj.acados_ocp_nlp_json.model = model;
-
     %% post process numerical data (mostly cast scalars to 1-dimensional cells)
     dims = obj.acados_ocp_nlp_json.dims;
 
@@ -106,7 +128,6 @@ function ocp_generate_c_code(obj)
             cost.(this_prop) = num2cell(cost.(this_prop));
         end
     end
-    obj.acados_ocp_nlp_json.cost = cost;
 
     % for cost type not LINEAR_LS, fill matrices with zeros
     if ~strcmp(cost.cost_type, 'LINEAR_LS')
@@ -122,6 +143,7 @@ function ocp_generate_c_code(obj)
     if ~strcmp(cost.cost_type_e, 'LINEAR_LS')
         cost.Vx_e = zeros(dims.ny_e, dims.nx);
     end
+    obj.acados_ocp_nlp_json.cost = cost;
 
     %% load JSON layout
     acados_folder = getenv('ACADOS_INSTALL_DIR');
@@ -214,6 +236,9 @@ function ocp_generate_c_code(obj)
         end
     end
     opts.time_steps = reshape(num2cell(opts.time_steps), [1, dims.N]);
+    opts.sim_method_num_stages = reshape(num2cell(opts.sim_method_num_stages), [1, dims.N]);
+    opts.sim_method_num_steps = reshape(num2cell(opts.sim_method_num_steps), [1, dims.N]);
+    opts.sim_method_jac_reuse = reshape(num2cell(opts.sim_method_jac_reuse), [1, dims.N]);
     obj.acados_ocp_nlp_json.solver_options = opts;
 
     % parameter values
@@ -230,6 +255,17 @@ function ocp_generate_c_code(obj)
         ocp_json_struct.constraints = struct(ocp_json_struct.constraints);
         ocp_json_struct.solver_options = struct(ocp_json_struct.solver_options);
 
+        % add compilation information to json
+        libs = loadjson(fileread(fullfile(acados_folder, 'lib', 'link_libs.json')));
+        ocp_json_struct.acados_link_libs = libs;
+        if ismac
+            ocp_json_struct.os = 'mac';
+        elseif isunix
+            ocp_json_struct.os = 'unix';
+        else
+            ocp_json_struct.os = 'pc';
+        end
+
         json_string = savejson('',ocp_json_struct, 'ForceRootName', 0);
     % else % Matlab
     %     json_string = jsonencode(obj.acados_ocp_nlp_json);
@@ -240,6 +276,8 @@ function ocp_generate_c_code(obj)
     fclose(fid);
     %% render templated code
     acados_template_mex.render_acados_templates('acados_ocp_nlp.json')
-    %% compile main
-    acados_template_mex.compile_main()
+    if ~ispc
+        %% compile main
+        acados_template_mex.compile_main()
+    end
 end

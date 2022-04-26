@@ -60,6 +60,7 @@ function render_acados_templates(acados_ocp_nlp_json_file)
     %% render templates
     template_dir = fullfile(acados_template_folder, 'c_templates_tera','*');
     json_fullfile = fullfile(pwd, acados_ocp_nlp_json_file);
+    main_dir = pwd;
     chdir('c_generated_code');
 
     % main
@@ -138,12 +139,13 @@ function render_acados_templates(acados_ocp_nlp_json_file)
     out_file = 'make_sfun_sim.m';
     render_file( json_fullfile, template_dir, template_file, out_file, t_renderer_location )
 
-    % header files
+    % headers and custom C-code files
+    c_dir = pwd;
     chdir([model_name, '_model']);
     template_file = 'model.in.h';
     out_file = [model_name, '_model.h'];
     render_file( json_fullfile, template_dir, template_file, out_file, t_renderer_location )
-    cd ..
+    cd(c_dir);
 
     cost_dir = [model_name, '_cost'];
     if ~(exist(cost_dir, 'dir'))
@@ -178,7 +180,7 @@ function render_acados_templates(acados_ocp_nlp_json_file)
         out_file = [model_name, '_external_cost_e.h'];
         render_file( json_fullfile, template_dir, template_file, out_file, t_renderer_location )
     end
-    cd ..
+    cd(c_dir);
 
     % constraints
     constr_dir = [model_name, '_constraints'];
@@ -209,7 +211,7 @@ function render_acados_templates(acados_ocp_nlp_json_file)
         out_file = [model_name, '_p_e_constraint.h'];
         render_file( json_fullfile, template_dir, template_file, out_file, t_renderer_location )
     end
-    cd ..
+    cd(c_dir);
 
     % Makefile
     template_file = 'Makefile.in';
@@ -226,8 +228,8 @@ function render_acados_templates(acados_ocp_nlp_json_file)
     out_file = 'make_sfun.m';
     render_file( json_fullfile, template_dir, template_file, out_file, t_renderer_location )
 
-    fprintf('Successfully generated acados solver!\n');
-    cd ..
+    fprintf('Successfully rendered acados templates!\n');
+    cd(main_dir)
 
 end
 

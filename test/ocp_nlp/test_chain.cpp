@@ -923,7 +923,7 @@ void setup_and_solve_nlp(int NN,
     * plan + config
     ************************************************/
 
-    ocp_nlp_plan *plan = ocp_nlp_plan_create(NN);
+    ocp_nlp_plan_t *plan = ocp_nlp_plan_create(NN);
 
     // TODO(dimitris): not necessarily GN, depends on cost module
     plan->nlp_solver = SQP;
@@ -1546,8 +1546,10 @@ TEST_CASE("chain example", "[NLP solver]")
     std::vector<std::string> qp_solvers = { "SPARSE_HPIPM",
                                             // "SPARSE_HPMPC",
                                             // "SPARSE_QPDUNES",
-                                            "DENSE_HPIPM",
-                                            "DENSE_QPOASES"
+                                            "DENSE_HPIPM"
+#ifdef ACADOS_WITH_QPOASES
+                                            , "DENSE_QPOASES"
+#endif
 #ifdef ACADOS_WITH_OOQP
                                             // , "DENSE_OOQP"
                                             // , "SPARSE_OOQP"

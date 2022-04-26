@@ -58,6 +58,10 @@ if(ACADOS_OCTAVE_TEMPLATE)
                 COMMAND "${CMAKE_COMMAND}" -E chdir ${PROJECT_SOURCE_DIR}/examples/acados_matlab_octave/test
                 octave --no-gui --no-window-system ./run_test_template_ocp_pendulum_gnsf.m)
 
+        add_test(NAME octave_test_template_lin_mass_ocp
+                COMMAND "${CMAKE_COMMAND}" -E chdir ${PROJECT_SOURCE_DIR}/examples/acados_matlab_octave/test
+                octave --no-gui --no-window-system ./run_test_template_lin_mass_ocp.m)
+
         add_test(NAME octave_test_template_ocp_pendulum_nls
                 COMMAND "${CMAKE_COMMAND}" -E chdir ${PROJECT_SOURCE_DIR}/examples/acados_matlab_octave/test
                 octave --no-gui --no-window-system ./run_test_template_ocp_pendulum_nls.m)
@@ -65,6 +69,14 @@ if(ACADOS_OCTAVE_TEMPLATE)
         add_test(NAME octave_test_template_mhe_lorentz
                 COMMAND "${CMAKE_COMMAND}" -E chdir ${PROJECT_SOURCE_DIR}/examples/acados_matlab_octave/test
                 octave --no-gui --no-window-system ./test_template_mhe_lorentz.m)
+
+        add_test(NAME octave_test_target_selector
+                COMMAND "${CMAKE_COMMAND}" -E chdir ${PROJECT_SOURCE_DIR}/examples/acados_matlab_octave/test
+                octave --no-gui --no-window-system ./test_target_selector.m)
+
+        add_test(NAME octave_test_generic_ext_cost_disc_dyn
+                COMMAND "${CMAKE_COMMAND}" -E chdir ${PROJECT_SOURCE_DIR}/examples/acados_matlab_octave/generic_dyn_disc
+                octave --no-gui --no-window-system ./run_generic_disc_dyn_example.m)
 endif()
 
 
@@ -127,12 +139,32 @@ endif()
 
 ### PYTHON ###
 if(ACADOS_PYTHON)
+
+add_test(NAME python_test_generic_impl_dyn
+        COMMAND "${CMAKE_COMMAND}" -E chdir ${PROJECT_SOURCE_DIR}/examples/acados_python/generic_impl_dyn
+        python minimal_example_ocp_generic_impl_dyn.py)
+add_test(NAME python_test_reset
+        COMMAND "${CMAKE_COMMAND}" -E chdir ${PROJECT_SOURCE_DIR}/examples/acados_python/tests
+        python reset_test.py)
+add_test(NAME python_test_reset_timing
+        COMMAND "${CMAKE_COMMAND}" -E chdir ${PROJECT_SOURCE_DIR}/examples/acados_python/timing_example
+        python reset_timing.py)
+add_test(NAME python_test_cython_vs_ctypes
+        COMMAND "${CMAKE_COMMAND}" -E chdir ${PROJECT_SOURCE_DIR}/examples/acados_python/tests
+        python test_cython_ctypes.py)
 add_test(NAME python_test_ocp
         COMMAND "${CMAKE_COMMAND}" -E chdir ${PROJECT_SOURCE_DIR}/examples/acados_python/tests
         python main_test.py)
 add_test(NAME python_pendulum_ocp_example
         COMMAND "${CMAKE_COMMAND}" -E chdir ${PROJECT_SOURCE_DIR}/examples/acados_python/getting_started/ocp
         python minimal_example_ocp.py)
+add_test(NAME python_pendulum_ocp_example_reuse_code
+        COMMAND "${CMAKE_COMMAND}" -E chdir ${PROJECT_SOURCE_DIR}/examples/acados_python/getting_started/ocp
+        python minimal_example_ocp_reuse_code.py)
+# CMake test
+add_test(NAME python_pendulum_ocp_example_cmake
+        COMMAND "${CMAKE_COMMAND}" -E chdir ${PROJECT_SOURCE_DIR}/examples/acados_python/getting_started/ocp
+        python minimal_example_ocp_cmake.py)
 add_test(NAME python_nonuniform_discretization_ocp_example
         COMMAND "${CMAKE_COMMAND}" -E chdir ${PROJECT_SOURCE_DIR}/examples/acados_python/getting_started/ocp
         python nonuniform_discretization_example.py)
@@ -147,6 +179,21 @@ add_test(NAME python_chain_ocp
 add_test(NAME python_chain_sim
         COMMAND "${CMAKE_COMMAND}" -E chdir ${PROJECT_SOURCE_DIR}/examples/acados_python/chain_mass
         python minimal_example_sim.py)
+
+# Marathos test problem with different globalization options
+add_test(NAME python_marathos_test_problem_globalization
+        COMMAND "${CMAKE_COMMAND}" -E chdir ${PROJECT_SOURCE_DIR}/examples/acados_python/non_ocp_nlp
+        python marathos_test_problem.py)
+
+# Simple OCP with Marathos effect
+add_test(NAME python_OCP_marathos_test_problem_globalization
+        COMMAND "${CMAKE_COMMAND}" -E chdir ${PROJECT_SOURCE_DIR}/examples/acados_python/linear_mass_model
+        python linear_mass_test_problem.py)
+
+# Armijo test problem
+add_test(NAME python_armijo_test
+        COMMAND "${CMAKE_COMMAND}" -E chdir ${PROJECT_SOURCE_DIR}/examples/acados_python/tests
+        python armijo_test.py)
 
 # qpDUNES example
 if(ACADOS_WITH_QPDUNES)
@@ -182,12 +229,19 @@ add_test(NAME python_pendulum_ocp_cost_example
 add_test(NAME python_pendulum_sim_example
         COMMAND "${CMAKE_COMMAND}" -E chdir ${PROJECT_SOURCE_DIR}/examples/acados_python/getting_started/sim
         python minimal_example_sim.py)
+# CMake test
+add_test(NAME python_pendulum_sim_example_cmake
+        COMMAND "${CMAKE_COMMAND}" -E chdir ${PROJECT_SOURCE_DIR}/examples/acados_python/getting_started/sim
+        python minimal_example_sim_cmake.py)
 add_test(NAME python_pendulum_ext_sim_example
         COMMAND "${CMAKE_COMMAND}" -E chdir ${PROJECT_SOURCE_DIR}/examples/acados_python/getting_started/sim
         python extensive_example_sim.py)
 add_test(NAME python_pendulum_closed_loop_example
         COMMAND "${CMAKE_COMMAND}" -E chdir ${PROJECT_SOURCE_DIR}/examples/acados_python/getting_started
         python minimal_example_closed_loop.py)
+add_test(NAME py_time_optimal_cython_ctypes
+        COMMAND "${CMAKE_COMMAND}" -E chdir ${PROJECT_SOURCE_DIR}/examples/acados_python/crane
+        python time_optimal_example.py)
 
 # example_ocp_dynamics_formulations all versions
 add_test(NAME python_pendulum_ocp_IRK
@@ -196,12 +250,16 @@ add_test(NAME python_pendulum_ocp_IRK
 add_test(NAME python_pendulum_ocp_ERK
         COMMAND "${CMAKE_COMMAND}" -E chdir ${PROJECT_SOURCE_DIR}/examples/acados_python/getting_started/ocp
         python example_ocp_dynamics_formulations.py --INTEGRATOR_TYPE=ERK)
-add_test(NAME python_pendulum_ocp_DISCRETE
-        COMMAND "${CMAKE_COMMAND}" -E chdir ${PROJECT_SOURCE_DIR}/examples/acados_python/getting_started/ocp
-        python example_ocp_dynamics_formulations.py --INTEGRATOR_TYPE=DISCRETE)
+# add_test(NAME python_pendulum_ocp_DISCRETE
+#         COMMAND "${CMAKE_COMMAND}" -E chdir ${PROJECT_SOURCE_DIR}/examples/acados_python/getting_started/ocp
+#         python example_ocp_dynamics_formulations.py --INTEGRATOR_TYPE=DISCRETE)
 add_test(NAME python_pendulum_ocp_GNSF
         COMMAND "${CMAKE_COMMAND}" -E chdir ${PROJECT_SOURCE_DIR}/examples/acados_python/getting_started/ocp
         python example_ocp_dynamics_formulations.py --INTEGRATOR_TYPE=GNSF)
+# CMake and solver=DISCRETE test
+add_test(NAME python_example_ocp_dynamics_formulations_cmake
+        COMMAND "${CMAKE_COMMAND}" -E chdir ${PROJECT_SOURCE_DIR}/examples/acados_python/getting_started/ocp
+        python example_ocp_dynamics_formulations.py --INTEGRATOR_TYPE DISCRETE --BUILD_SYSTEM cmake)
 
 add_test(NAME python_pendulum_soft_constraints_example
         COMMAND "${CMAKE_COMMAND}" -E chdir ${PROJECT_SOURCE_DIR}/examples/acados_python/tests

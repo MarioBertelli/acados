@@ -32,7 +32,6 @@
 %
 
 %% test of native matlab interface
-clear all
 
 addpath('../simple_dae_model/');
 
@@ -181,6 +180,7 @@ for itest = 1:2
     ocp_opts.set('sim_method_num_stages', ocp_sim_method_num_stages);
     ocp_opts.set('sim_method_num_steps', ocp_sim_method_num_steps);
     ocp_opts.set('sim_method_newton_iter', ocp_sim_method_newton_iter);
+    ocp_opts.set('sim_method_jac_reuse', [0; ones(N-1, 1)]);
 
 
     %% acados ocp
@@ -251,5 +251,5 @@ if abs(cost_val_ocp - cost_val_t_ocp) > 1e-9
 else
     disp(['Cost value: ', num2str(cost_val_ocp, '%e'), ' template: ', num2str(cost_val_t_ocp, '%e')]);
 end
-clear all
+
 cd ..

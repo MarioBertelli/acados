@@ -412,7 +412,8 @@ acados_size_t ocp_nlp_cost_ls_opts_calculate_size(void *config_, void *dims_)
 {
     acados_size_t size = 0;
 
-    size += sizeof(ocp_nlp_cost_ls_opts);
+    // size += sizeof(ocp_nlp_cost_ls_opts);
+    // make_int_multiple_of(8, &size);
 
     return size;
 }
@@ -421,14 +422,13 @@ acados_size_t ocp_nlp_cost_ls_opts_calculate_size(void *config_, void *dims_)
 
 void *ocp_nlp_cost_ls_opts_assign(void *config_, void *dims_, void *raw_memory)
 {
-    char *c_ptr = (char *) raw_memory;
+    // char *c_ptr = (char *) raw_memory;
+    // ocp_nlp_cost_ls_opts *opts = (ocp_nlp_cost_ls_opts *) c_ptr;
+    // c_ptr += sizeof(ocp_nlp_cost_ls_opts);
+    // assert((char *) raw_memory + 
+    //     ocp_nlp_cost_ls_opts_calculate_size(config_, dims_) >= c_ptr);
 
-    ocp_nlp_cost_ls_opts *opts = (ocp_nlp_cost_ls_opts *) c_ptr;
-    c_ptr += sizeof(ocp_nlp_cost_ls_opts);
-
-    assert((char *) raw_memory + 
-        ocp_nlp_cost_ls_opts_calculate_size(config_, dims_) >= c_ptr);
-
+    void *opts = raw_memory;
     return opts;
 }
 
@@ -793,11 +793,11 @@ void ocp_nlp_cost_ls_update_qp_matrices(void *config_, void *dims_,
 
         // tmp_ny = W * res
         blasfeo_dsymv_l(ny, 1.0, &model->W, 0, 0, &memory->res,
-                0, 0.0, &work->tmp_ny, 0, &work->tmp_ny, 0);
+                0, 0.0, &model->y_ref, 0, &work->tmp_ny, 0);
 
         // grad = Cyt_tilde * tmp_ny
         blasfeo_dgemv_n(nu + nx, ny, 1.0, &work->Cyt_tilde,
-                0, 0, &work->tmp_ny, 0, 0.0, &memory->grad, 0, &memory->grad, 0);
+                0, 0, &work->tmp_ny, 0, 0.0, memory->ux, 0, &memory->grad, 0);
 
         memory->fun = 0.5 * blasfeo_ddot(ny, &work->tmp_ny, 0, &memory->res, 0);
         // TODO what about the exact hessian in the case of nz>0 ???
@@ -814,7 +814,7 @@ void ocp_nlp_cost_ls_update_qp_matrices(void *config_, void *dims_,
 
         // tmp_ny = W * res
         blasfeo_dsymv_l(ny, 1.0, &model->W, 0, 0, &memory->res, 0,
-                        0.0, &work->tmp_ny, 0, &work->tmp_ny, 0);
+                        0.0, &model->y_ref, 0, &work->tmp_ny, 0);
 
         // grad = Cyt * tmp_ny
         blasfeo_dgemv_n(nu + nx, ny, 1.0, &model->Cyt, 0, 0, &work->tmp_ny, 0,
@@ -893,7 +893,7 @@ void ocp_nlp_cost_ls_compute_fun(void *config_, void *dims_, void *model_, void 
     }
 
     // tmp_ny = W_chol^T * res
-    blasfeo_dtrmv_ltn(ny, ny, &memory->W_chol, 0, 0, &memory->res, 0, &work->tmp_ny, 0);
+    blasfeo_dtrmv_ltn(ny, &memory->W_chol, 0, 0, &memory->res, 0, &work->tmp_ny, 0);
     // fun = .5 * tmp_ny^T * tmp_ny
     memory->fun = 0.5 * blasfeo_ddot(ny, &work->tmp_ny, 0, &work->tmp_ny, 0);
 

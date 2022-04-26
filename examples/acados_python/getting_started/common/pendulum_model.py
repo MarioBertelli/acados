@@ -41,8 +41,8 @@ def export_pendulum_ode_model():
     # constants
     M = 1. # mass of the cart [kg] -> now estimated
     m = 0.1 # mass of the ball [kg]
-    g = 9.81 # length of the rod [m]
-    l = 0.8 # gravity constant [m/s^2]
+    g = 9.81 # gravity constant [m/s^2]
+    l = 0.8 # length of the rod [m]
 
     # set up states & controls
     x1      = SX.sym('x1')
@@ -52,7 +52,6 @@ def export_pendulum_ode_model():
     
     x = vertcat(x1, theta, v1, dtheta)
 
-    # controls
     F = SX.sym('F')
     u = vertcat(F)
     
@@ -71,11 +70,13 @@ def export_pendulum_ode_model():
     p = []
     
     # dynamics
-    denominator = M + m - m*cos(theta)*cos(theta)
+    cos_theta = cos(theta)
+    sin_theta = sin(theta)
+    denominator = M + m - m*cos_theta*cos_theta
     f_expl = vertcat(v1,
                      dtheta,
-                     (-m*l*sin(theta)*dtheta*dtheta + m*g*cos(theta)*sin(theta)+F)/denominator,
-                     (-m*l*cos(theta)*sin(theta)*dtheta*dtheta + F*cos(theta)+(M+m)*g*sin(theta))/(l*denominator)
+                     (-m*l*sin_theta*dtheta*dtheta + m*g*cos_theta*sin_theta+F)/denominator,
+                     (-m*l*cos_theta*sin_theta*dtheta*dtheta + F*cos_theta+(M+m)*g*sin_theta)/(l*denominator)
                      )
 
     f_impl = xdot - f_expl
@@ -100,7 +101,6 @@ def export_pendulum_ode_model_with_discrete_rk4(dT):
 
     x = model.x
     u = model.u
-    nx = x.size()[0]
 
     ode = Function('ode', [x, u], [model.f_expl_expr])
     # set up RK4

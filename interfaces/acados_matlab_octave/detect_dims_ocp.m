@@ -292,10 +292,10 @@ function [model, opts] = detect_dims_ocp(model, opts)
     end
 
     if ~strcmp(wrong_field, '')
-        error(strcat('Inconsistent size for field', wrong_field, ' with dimension ', num2str(dim),...
+        error(['Inconsistent size for field ', wrong_field, ' with dimension ', num2str(dim),...
               '. Detected ns = ', num2str(ns), ' = nsbx + nsbu + nsg + nsh + nsphi.',...
               ' With nsbx = ', num2str(nsbx), ', nsbu = ', num2str(nsbu), ' nsg = ', num2str(nsg),...
-              ' nsh = ', num2str(nsh), ', nsphi = ', num2str(nsphi), '.'))
+              ' nsh = ', num2str(nsh), ', nsphi = ', num2str(nsphi), '.'])
     end
 
     model.dim_ns = ns;
@@ -345,10 +345,10 @@ function [model, opts] = detect_dims_ocp(model, opts)
     end
 
     if ~strcmp(wrong_field, '')
-        error(strcat('Inconsistent size for field', wrong_field, ' with dimension ', num2str(dim),...
+        error(['Inconsistent size for field', wrong_field, ' with dimension ', num2str(dim),...
                 '. Detected ns_e = ', num2str(ns_e), ' = nsbx_e + nsg_e + nsh_e + nsphi_e.',...
                 ' With nsbx_e = ', num2str(nsbx_e), ' nsg_e = ', num2str(nsg_e),...
-                ' nsh_e = ', num2str(nsh_e), ', nsphi_e = ', num2str(nsphi_e), '.'))
+                ' nsh_e = ', num2str(nsh_e), ', nsphi_e = ', num2str(nsphi_e), '.'])
     end
 
     model.dim_ns_e = ns_e;
@@ -378,7 +378,12 @@ function [model, opts] = detect_dims_ocp(model, opts)
         sum_time_steps = sum(opts.time_steps);
         if abs((sum_time_steps - model.T) / model.T) > 1e-14
             error(['time steps are not consistent with time horizon T, ', ...
-                'got T = ' num2str(model.T) ' sum(time_steps) = ' num2str(sum_time_steps)]);
+                'got T = ' num2str(model.T) '; sum(time_steps) = ' num2str(sum_time_steps) '.']);
+        end
+        % just to have them available, e.g. for plotting;
+        opts.shooting_nodes = zeros(N+1, 1);
+        for i = 1:N
+            opts.shooting_nodes(i+1) = sum(opts.time_steps(1:i));
         end
     else
         opts.time_steps = model.T/N * ones(N,1);
@@ -391,7 +396,7 @@ function [model, opts] = detect_dims_ocp(model, opts)
     % qp_dunes
     if ~isempty(strfind(opts.qp_solver,'qpdunes'))
         model.constr_idxbxe_0 = [];
-        model.dim_nbxe_0 = 0
+        model.dim_nbxe_0 = 0;
     end
 
 end

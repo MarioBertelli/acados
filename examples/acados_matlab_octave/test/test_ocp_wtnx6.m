@@ -32,7 +32,6 @@
 %
 
 %% test of native matlab interface
-clear all
 
 addpath('../wind_turbine_nx6/');
 
@@ -522,3 +521,10 @@ if 0
         waitforbuttonpress;
     end
 end
+
+
+% remove temporary created files
+delete('y_ref')
+delete('y_e_ref')
+delete('wind0_ref')
+delete('windN_ref')

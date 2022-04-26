@@ -32,26 +32,67 @@
 %
 
 function compile_main()
+    return_dir = pwd;
     cd c_generated_code
     %% build main file
     if isunix || ismac 
-        % compile if on Mac or Unix platform
         [ status, result ] = system('make');
         if status
-            cd ..
+            cd(return_dir);
             error('building templated code failed.\nGot status %d, result: %s',...
                   status, result);
         end
         [ status, result ] = system('make shared_lib');
         if status
-            cd ..
+            cd(return_dir);
             error('building templated code as shared library failed.\nGot status %d, result: %s',...
                   status, result);
         end
         fprintf('Successfully built main file!\n');
     else
-        disp(['Commandline compilation of generated C code not yet supported under Windows.', ...
-            'Please consider building the code in the c_generated_code folder from Windows Subsystem for Linux.'])
+        % compile if on Windows platform
+        disp(['Compilation of generated C code main file not thoroughly tested under Windows. Attempting to continue.'])
+
+        % check compiler
+        use_msvc = false;
+        if ~is_octave()
+            mexOpts = mex.getCompilerConfigurations('C', 'Selected');
+            if contains(mexOpts.ShortName, 'MSVC')
+                use_msvc = true;
+            end
+        end
+
+        % get compiler
+        if use_msvc
+            % get env vars for MSVC
+            msvc_env = fullfile(mexOpts.Location, 'VC\Auxiliary\Build\vcvars64.bat');
+            assert(isfile(msvc_env), 'Cannot find definition of MSVC env vars.');
+
+            make_cmd = sprintf('"%s" & nmake', msvc_env);
+
+            % TODO
+            warning('Templated Makefile not (yet) implemented for MSVC compiler.')
+            cd(return_dir);
+            return;
+        else
+            % using MinGW
+            make_cmd = 'mingw32-make.exe';
+        end
+
+        % compile
+        [ status, result ] = system(make_cmd);
+        if status
+            cd(return_dir);
+            error('Building templated code failed.\nGot status %d, result: %s',...
+                  status, result);
+        end
+        [ status, result ] = system(sprintf('%s shared_lib', make_cmd));
+        if status
+            cd(return_dir);
+            error('Building templated code as shared library failed.\nGot status %d, result: %s',...
+                  status, result);
+        end
+        fprintf('Successfully built main file!\n');
     end
-    cd ..
+    cd(return_dir);
 end

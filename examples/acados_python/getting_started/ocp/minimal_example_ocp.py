@@ -92,7 +92,7 @@ ocp.solver_options.qp_solver = 'PARTIAL_CONDENSING_HPIPM' # FULL_CONDENSING_QPOA
 # PARTIAL_CONDENSING_HPIPM, FULL_CONDENSING_QPOASES, FULL_CONDENSING_HPIPM,
 # PARTIAL_CONDENSING_QPDUNES, PARTIAL_CONDENSING_OSQP
 ocp.solver_options.hessian_approx = 'GAUSS_NEWTON'
-ocp.solver_options.integrator_type = 'ERK'
+ocp.solver_options.integrator_type = 'IRK'
 # ocp.solver_options.print_level = 1
 ocp.solver_options.nlp_solver_type = 'SQP' # SQP_RTI, SQP
 
@@ -108,7 +108,7 @@ status = ocp_solver.solve()
 
 if status != 0:
     ocp_solver.print_statistics() # encapsulates: stat = ocp_solver.get_stats("statistics")
-    raise Exception('acados returned status {}. Exiting.'.format(status))
+    raise Exception(f'acados returned status {status}.')
 
 # get solution
 for i in range(N):

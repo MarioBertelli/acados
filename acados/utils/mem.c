@@ -43,7 +43,6 @@
 // acados
 #include "acados/utils/mem.h"
 
-// #define WINDOWS_SKIP_PTR_ALIGNMENT_CHECK
 
 // #define _USE_VALGRIND_  // uncomment to bypass assignment and do new memory allocation instead
 

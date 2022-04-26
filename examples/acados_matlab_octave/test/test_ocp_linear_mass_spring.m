@@ -33,7 +33,6 @@
 %
 
 %% test of native matlab interface
-clear all
 
 addpath('../linear_mass_spring_model/');
 
@@ -239,6 +238,12 @@ ocp.set('init_u', u_traj_init);
 tic;
 ocp.solve();
 time_ext = toc;
+
+% store and load iterate
+filename = 'iterate.json';
+ocp.store_iterate(filename, true);
+ocp.load_iterate(filename);
+delete(filename)
 
 % get solution
 u = ocp.get('u');

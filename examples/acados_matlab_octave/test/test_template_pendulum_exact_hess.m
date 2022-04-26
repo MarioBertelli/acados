@@ -32,7 +32,6 @@
 %
 
 %% test of native matlab interface
-clear all
 
 addpath('../pendulum_on_cart_model')
 
@@ -55,8 +54,11 @@ qp_solver_cond_ric_alg = 0;
 qp_solver_ric_alg = 0;
 qp_solver_warm_start = 0; % 0: cold, 1: warm, 2: hot
 qp_solver_iter_max = 100;
-sim_method_num_stages = 4;
-sim_method_num_steps = 1;
+
+% can vary for integrators
+sim_method_num_stages = 4 * ones(N,1);
+sim_method_num_steps = ones(N,1);
+sim_method_num_steps(1:10) = 2;
 
 
 %% model dynamics
@@ -188,6 +190,10 @@ ocp_opts.set('exact_hess_dyn', 1);
 ocp_opts.set('exact_hess_cost', 1);
 ocp_opts.set('exact_hess_constr', 1);
 
+% set default parameter values
+ocp_opts.set('parameter_values', 1);
+
+
 %% create ocp solver
 ocp = acados_ocp(ocp_model, ocp_opts);
 % x_traj_init = zeros(nx, N+1);
@@ -198,9 +204,11 @@ u_traj_init = zeros(nu, N);
 % initial state
 ocp.set('constr_x0', x0);
 ocp.set('print_level', print_level)
-for ii = 0 : N
-    ocp.set('p', 1, ii);
+% change parameters for some stages interacting with solver object
+for ii = 0 : 2 : N
+    ocp.set('p', 1.1, ii);
 end
+
 % set trajectory initialization
 ocp.set('init_x', x_traj_init);
 ocp.set('init_u', u_traj_init);
@@ -230,8 +238,9 @@ t_ocp.set('init_x', x_traj_init);
 t_ocp.set('init_u', u_traj_init);
 t_ocp.set('init_pi', zeros(nx, N))
 
-for ii = 0 : N
-    t_ocp.set('p', 1, ii);
+% change parameters for some stages interacting with solver object
+for ii = 0 : 2 : N
+    t_ocp.set('p', 1.1, ii);
 end
 
 t_ocp.solve()

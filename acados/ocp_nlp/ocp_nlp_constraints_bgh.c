@@ -54,6 +54,7 @@
 acados_size_t ocp_nlp_constraints_bgh_dims_calculate_size(void *config_)
 {
     acados_size_t size = sizeof(ocp_nlp_constraints_bgh_dims);
+    make_int_multiple_of(8, &size);
 
     return size;
 }
@@ -305,7 +306,7 @@ void ocp_nlp_constraints_bgh_dims_set(void *config_, void *dims_, const char *fi
     }
     else
     {
-        printf("\nerror: ocp_nlp_constraints_bgh_dims_get: field %s not available in module\n", field);
+        printf("\nerror: ocp_nlp_constraints_bgh_dims_set: field %s not available in module\n", field);
         exit(1);
     }
 }
@@ -1425,6 +1426,12 @@ void ocp_nlp_constraints_bgh_update_qp_matrices(void *config_, void *dims_, void
         blasfeo_dvecex_sp(ns, 1.0, model->idxs, memory->lam, nb+ng+nh, &memory->adj, nu+nx+ns);
         blasfeo_daxpy(2*ns, 1.0, memory->lam, 2*nb+2*ng+2*nh, &memory->adj, nu+nx, &memory->adj, nu+nx);
     }
+
+    // if (nb + ns + ng + nh > 0)
+    // {
+    //     printf("constraints fun in module = \n");
+    //     blasfeo_print_exp_dvec(2 * nb + 2 * ng + 2 * nh + 2 * ns, &memory->fun, 0);
+    // }
 
     return;
 }

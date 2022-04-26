@@ -1,6 +1,14 @@
 name: Test Full Build Linux
 
-on: [push, pull_request]
+on:
+  push:
+    branches-ignore:
+      - 'doc*'
+      - 'wip*'
+  pull_request:
+    branches:
+      - '*'
+
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
@@ -11,7 +19,7 @@ env:
   ACADOS_OCTAVE_TEMPLATE: ON
   ACADOS_WITH_OSQP: ON
   ACADOS_WITH_QPOASES: ON
-  ACADOS_WITH_QPDUNES: ON
+  ACADOS_WITH_QPDUNES: OFF
 
 
 jobs:
@@ -69,8 +77,7 @@ jobs:
         cmake --build . --config $BUILD_TYPE
         make install -j4
 
-
-    - name: Export Paths
+    - name: Export Paths Lib
       working-directory: ${{runner.workspace}}/acados
       shell: bash
       run: |
@@ -78,7 +85,16 @@ jobs:
         echo "ACADOS_INSTALL_DIR=$(pwd)" >> $GITHUB_ENV
         echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pwd)/lib" >> $GITHUB_ENV
         echo "OCTAVE_PATH=$OCTAVE_PATH:$(pwd)/interfaces/acados_matlab_octave:$(pwd)/interfaces/acados_matlab_octave/acados_template_mex" >> $GITHUB_ENV
+        echo "MATLABPATH=$MATLABPATH:$(pwd)/interfaces/acados_matlab_octave:$(pwd)/interfaces/acados_matlab_octave/acados_template_mex" >> $GITHUB_ENV
 
+    # test interfaces
+    - name: Install Casadi MATLAB
+      working-directory: ${{runner.workspace}}/acados/external
+      shell: bash
+      run: |
+        sudo chmod +x ./../.github/linux/install_casadi_matlab.sh
+        ./../.github/linux/install_casadi_matlab.sh
+        echo "MATLABPATH=$MATLABPATH:$(pwd)/casadi-matlab" >> $GITHUB_ENV
 
     - name: Prepare Octave
       working-directory: ${{runner.workspace}}/acados/external
@@ -90,21 +106,20 @@ jobs:
         ./../.github/linux/install_casadi_octave.sh
         echo "OCTAVE_PATH=$OCTAVE_PATH:$(pwd)/casadi-octave" >> $GITHUB_ENV
 
-
-    - name: Export Paths Octave
-      working-directory: ${{runner.workspace}}/acados/examples/acados_matlab_octave/pendulum_on_cart_model
+    - name: Export Paths MEX tests
+      working-directory: ${{runner.workspace}}/acados/examples/acados_matlab_octave/test
       shell: bash
       run: |
         echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:./build" >> $GITHUB_ENV
-
+        echo "ENV_RUN=true" >> $GITHUB_ENV
+        echo "LD_RUN_PATH=$LD_RUN_PATH:$(pwd)/c_generated_code" >> $GITHUB_ENV
 
     - name: Install Python interface
       working-directory: ${{runner.workspace}}/acados
       shell: bash
       run: ./.github/linux/install_python.sh
 
-
-    - name: Test
+    - name: Run CMake tests (ctest)
       working-directory: ${{runner.workspace}}/build
       shell: bash
       # Execute tests defined by the CMake configuration.
@@ -112,3 +127,32 @@ jobs:
       run: |
         echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
         ./../acados/.github/linux/run_tests.sh
+
+    - name: Install MATLAB
+      uses: matlab-actions/setup-matlab@v1
+      if: always()
+      with:
+      # MATLAB release to set up (R2020a or later)
+        release: R2020a
+ 
+    - name: Matlab test native MEX
+      uses: matlab-actions/run-command@v1
+      if: always()
+      with:
+        command: cd examples/acados_matlab_octave/test; matlab_test_native_mex
+
+    - name: Matlab test templates
+      uses: matlab-actions/run-command@v1
+      with:
+        command: cd examples/acados_matlab_octave/test; matlab_test_templates
+
+    - name: Matlab test templates 2
+      uses: matlab-actions/run-command@v1
+      with:
+        command: cd examples/acados_matlab_octave/test; run_test_template_ocp_pendulum_nls
+
+    - name: Run Simulink test
+      uses: matlab-actions/run-command@v1
+      if: always()
+      with:
+        command: cd examples/acados_matlab_octave/test; simulink_test

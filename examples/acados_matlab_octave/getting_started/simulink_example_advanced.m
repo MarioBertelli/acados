@@ -4,6 +4,7 @@
 %% Run minimal example
 %
 minimal_example_ocp;
+% extensive_example_ocp;
 
 
 %% get available simulink_opts with default options
@@ -16,6 +17,8 @@ simulink_opts.inputs.cost_W_0 = 1;
 simulink_opts.inputs.cost_W = 1;
 simulink_opts.inputs.cost_W_e = 1;
 simulink_opts.inputs.x_init = 1;
+simulink_opts.inputs.reset_solver = 1;
+
 
 % outputs
 simulink_opts.outputs.utraj = 1;

@@ -77,36 +77,46 @@ end
 
 model_name = model.name;
 
-if isfield(model, 'cost_expr_ext_cost') && strcmp(model.ext_fun_type, 'casadi')
+if isfield(model, 'cost_expr_ext_cost') && strcmp(model.cost_ext_fun_type, 'casadi') && strcmp(model.cost_type, 'ext_cost')
     ext_cost = model.cost_expr_ext_cost;
     % generate jacobian, hessian
     [full_hess, grad] = hessian(ext_cost, vertcat(u, x));
     % Set up functions
     ext_cost_fun = Function([model_name,'_cost_ext_cost_fun'], {x, u, p}, {ext_cost});
     ext_cost_fun_jac = Function([model_name,'_cost_ext_cost_fun_jac'], {x, u, p}, {ext_cost, grad});
-    ext_cost_fun_jac_hess = Function([model_name,'_cost_ext_cost_fun_jac_hess'], {x, u, p},...
-                                 {ext_cost, grad, full_hess});
+    if isfield(model, 'cost_expr_ext_cost_custom_hess')
+        ext_cost_fun_jac_hess = Function([model_name,'_cost_ext_cost_fun_jac_hess'], {x, u, p},...
+                                     {ext_cost, grad, model.cost_expr_ext_cost_custom_hess});
+    else
+        ext_cost_fun_jac_hess = Function([model_name,'_cost_ext_cost_fun_jac_hess'], {x, u, p},...
+                                     {ext_cost, grad, full_hess});
+    end
     % generate C code
     ext_cost_fun.generate([model_name,'_cost_ext_cost_fun'], casadi_opts);
     ext_cost_fun_jac_hess.generate([model_name,'_cost_ext_cost_fun_jac_hess'], casadi_opts);
     ext_cost_fun_jac.generate([model_name,'_cost_ext_cost_fun_jac'], casadi_opts);
 end
 
-if isfield(model, 'cost_expr_ext_cost_0') && strcmp(model.ext_fun_type_0, 'casadi')
+if isfield(model, 'cost_expr_ext_cost_0') && strcmp(model.cost_ext_fun_type_0, 'casadi') && strcmp(model.cost_type_0, 'ext_cost')
     ext_cost_0 = model.cost_expr_ext_cost_0;
     % generate jacobian, hessian
     [full_hess, grad] = hessian(ext_cost_0, vertcat(u, x));
     % Set up functions
     ext_cost_0_fun = Function([model_name,'_cost_ext_cost_0_fun'], {x, u, p}, {ext_cost_0});
     ext_cost_0_fun_jac = Function([model_name,'_cost_ext_cost_0_fun_jac'], {x, u, p}, {ext_cost_0, grad});
-    ext_cost_0_fun_jac_hess = Function([model_name,'_cost_ext_cost_0_fun_jac_hess'], {x, u, p}, {ext_cost_0, grad, full_hess});
+    if isfield(model, 'cost_expr_ext_cost_custom_hess_0')
+        ext_cost_0_fun_jac_hess = Function([model_name,'_cost_ext_cost_0_fun_jac_hess'], {x, u, p},...
+                                     {ext_cost_0, grad, model.cost_expr_ext_cost_custom_hess_0});
+    else
+        ext_cost_0_fun_jac_hess = Function([model_name,'_cost_ext_cost_0_fun_jac_hess'], {x, u, p}, {ext_cost_0, grad, full_hess});
+    end
     % generate C code
     ext_cost_0_fun.generate([model_name,'_cost_ext_cost_0_fun'], casadi_opts);
     ext_cost_0_fun_jac.generate([model_name,'_cost_ext_cost_0_fun_jac'], casadi_opts);
     ext_cost_0_fun_jac_hess.generate([model_name,'_cost_ext_cost_0_fun_jac_hess'], casadi_opts);
 end
 
-if isfield(model, 'cost_expr_ext_cost_e') && strcmp(model.ext_fun_type_e, 'casadi')
+if isfield(model, 'cost_expr_ext_cost_e') && strcmp(model.cost_ext_fun_type_e, 'casadi') && strcmp(model.cost_type_e, 'ext_cost')
     ext_cost_e = model.cost_expr_ext_cost_e;
     % generate jacobians
     jac_x_e = jacobian(ext_cost_e, x);
@@ -115,7 +125,12 @@ if isfield(model, 'cost_expr_ext_cost_e') && strcmp(model.ext_fun_type_e, 'casad
     % Set up functions
     ext_cost_e_fun = Function([model_name,'_cost_ext_cost_e_fun'], {x, p}, {ext_cost_e});
     ext_cost_e_fun_jac = Function([model_name,'_cost_ext_cost_e_fun_jac'], {x, p}, {ext_cost_e, jac_x_e'});
-    ext_cost_e_fun_jac_hess = Function([model_name,'_cost_ext_cost_e_fun_jac_hess'], {x, p}, {ext_cost_e, jac_x_e', hes_xx_e});
+    if isfield(model, 'cost_expr_ext_cost_custom_hess_e')
+        ext_cost_e_fun_jac_hess = Function([model_name,'_cost_ext_cost_e_fun_jac_hess'], {x, p},...
+                                     {ext_cost_e, jac_x_e', model.cost_expr_ext_cost_custom_hess_e});
+    else
+        ext_cost_e_fun_jac_hess = Function([model_name,'_cost_ext_cost_e_fun_jac_hess'], {x, p}, {ext_cost_e, jac_x_e', hes_xx_e});
+    end
     % generate C code
     ext_cost_e_fun.generate([model_name,'_cost_ext_cost_e_fun'], casadi_opts);
     ext_cost_e_fun_jac.generate([model_name,'_cost_ext_cost_e_fun_jac'], casadi_opts);

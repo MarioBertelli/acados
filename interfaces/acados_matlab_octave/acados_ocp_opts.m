@@ -32,7 +32,6 @@
 %
 
 classdef acados_ocp_opts < handle
-    
 
 
     properties
@@ -42,7 +41,6 @@ classdef acados_ocp_opts < handle
 
 
     methods
-        
 
         function obj = acados_ocp_opts()
             % model stuct
@@ -55,6 +53,7 @@ classdef acados_ocp_opts < handle
             % set one of the following for nonuniform grid
             obj.opts_struct.shooting_nodes = [];
             obj.opts_struct.time_steps = [];
+            obj.opts_struct.parameter_values = [];
 
             obj.opts_struct.nlp_solver = 'sqp';
             obj.opts_struct.nlp_solver_exact_hessian = 'false';
@@ -71,19 +70,25 @@ classdef acados_ocp_opts < handle
             obj.opts_struct.globalization = 'fixed_step';
             obj.opts_struct.alpha_min = 0.05;
             obj.opts_struct.alpha_reduction = 0.7;
+            obj.opts_struct.line_search_use_sufficient_descent = 0;
+            obj.opts_struct.globalization_use_SOC = 0;
+            obj.opts_struct.full_step_dual = 0;
+            obj.opts_struct.eps_sufficient_descent = 1e-4;
 
             obj.opts_struct.qp_solver_iter_max = 50;
             % obj.opts_struct.qp_solver_cond_N = 5; % New horizon after partial condensing
-            obj.opts_struct.qp_solver_cond_ric_alg = 0; % 0: dont factorize hessian in the condensing; 1: factorize
-            obj.opts_struct.qp_solver_ric_alg = 0; % HPIPM specific
+            obj.opts_struct.qp_solver_cond_ric_alg = 1; % 0: dont factorize hessian in the condensing; 1: factorize
+            obj.opts_struct.qp_solver_ric_alg = 1; % HPIPM specific
             obj.opts_struct.qp_solver_warm_start = 0;
                     % 0 no warm start; 1 warm start primal variables; 2 warm start primal and dual variables
             obj.opts_struct.warm_start_first_qp = 0;
                     % 0 no warm start in first sqp iter - 1 warm start even in first sqp iter
             obj.opts_struct.sim_method = 'irk'; % erk; irk; irk_gnsf
+            obj.opts_struct.collocation_type = 'gauss_legendre';
             obj.opts_struct.sim_method_num_stages = 4;
             obj.opts_struct.sim_method_num_steps = 1;
             obj.opts_struct.sim_method_newton_iter = 3;
+            obj.opts_struct.sim_method_jac_reuse = 0;
             obj.opts_struct.gnsf_detect_struct = 'true';
             obj.opts_struct.regularize_method = 'no_regularize';
             obj.opts_struct.print_level = 0;
@@ -92,7 +97,7 @@ classdef acados_ocp_opts < handle
             obj.opts_struct.exact_hess_dyn = 1;
             obj.opts_struct.exact_hess_cost = 1;
             obj.opts_struct.exact_hess_constr = 1;
-
+            obj.opts_struct.ext_fun_compile_flags = '-O2';
 
             obj.opts_struct.output_dir = fullfile(pwd, 'build');
             if ismac()
@@ -102,6 +107,11 @@ classdef acados_ocp_opts < handle
 
 
         function obj = set(obj, field, value)
+            % convert Matlab strings to char arrays
+            if isstring(value)
+                value = char(value);
+            end
+
             if (strcmp(field, 'compile_interface'))
                 obj.opts_struct.compile_interface = value;
             elseif (strcmp(field, 'codgen_model'))
@@ -171,6 +181,8 @@ classdef acados_ocp_opts < handle
                 obj.opts_struct.qp_solver_warm_start = value;
             elseif (strcmp(field, 'sim_method'))
                 obj.opts_struct.sim_method = value;
+            elseif (strcmp(field, 'collocation_type'))
+                obj.opts_struct.collocation_type = value;
             elseif (strcmp(field, 'sim_method_num_stages'))
                 obj.opts_struct.sim_method_num_stages = value;
             elseif (strcmp(field, 'sim_method_num_steps'))
@@ -179,6 +191,8 @@ classdef acados_ocp_opts < handle
                 obj.opts_struct.sim_method_newton_iter = value;
             elseif (strcmp(field, 'sim_method_exact_z_output'))
                 obj.opts_struct.sim_method_exact_z_output = value;
+            elseif (strcmp(field, 'sim_method_jac_reuse'))
+                obj.opts_struct.sim_method_jac_reuse = value;
             elseif (strcmp(field, 'gnsf_detect_struct'))
                 obj.opts_struct.gnsf_detect_struct = value;
             elseif (strcmp(field, 'regularize_method'))
@@ -193,8 +207,20 @@ classdef acados_ocp_opts < handle
                 obj.opts_struct.alpha_min = value;
             elseif (strcmp(field, 'alpha_reduction'))
                 obj.opts_struct.alpha_reduction = value;
+            elseif (strcmp(field, 'line_search_use_sufficient_descent'))
+                obj.opts_struct.line_search_use_sufficient_descent = value;
+            elseif (strcmp(field, 'globalization_use_SOC'))
+                obj.opts_struct.globalization_use_SOC = value;
+            elseif (strcmp(field, 'full_step_dual'))
+                obj.opts_struct.full_step_dual = value;
+            elseif (strcmp(field, 'eps_sufficient_descent'))
+                obj.opts_struct.eps_sufficient_descent = value;
             elseif (strcmp(field, 'globalization'))
                 obj.opts_struct.globalization = value;
+            elseif (strcmp(field, 'parameter_values'))
+                obj.opts_struct.parameter_values = value;
+            elseif (strcmp(field, 'ext_fun_compile_flags'))
+                obj.opts_struct.ext_fun_compile_flags = value
             elseif (strcmp(field, 'compile_mex'))
                 disp(['Option compile_mex is not supported anymore,'...
                     'please use compile_interface instead or dont set the option.', ...
@@ -206,9 +232,7 @@ classdef acados_ocp_opts < handle
             end
         end
 
-
     end % methods
-
 
 
 end % class

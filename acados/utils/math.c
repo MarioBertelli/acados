@@ -40,10 +40,15 @@
 #include "acados/utils/math.h"
 #include "acados/utils/types.h"
 
-#if defined(__DSPACE__)
+#if defined(__MABX2__)
 double fmax(double a, double b)
 {
     return a > b ? a : b;
+}
+
+int isnan(double x)
+{
+    return x != x;
 }
 #endif
 
@@ -960,8 +965,11 @@ static void tred2(int dim, double *V, double *d, double *e)
         d[j] = V[(dim - 1) * dim + j];
         V[(dim - 1) * dim + j] = 0.0;
     }
-    V[(dim - 1) * dim + dim - 1] = 1.0;
-    e[0] = 0.0;
+    if (dim > 0)
+    {
+        V[(dim - 1) * dim + dim - 1] = 1.0;
+        e[0] = 0.0;
+    }
 }
 
 

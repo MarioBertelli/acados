@@ -39,27 +39,33 @@
 extern "C" {
 #endif
 
+{% if cost.cost_ext_fun_type_0 == "casadi" %}
+
 {% if cost.cost_type_0 == "EXTERNAL" %}
 int {{ model.name }}_cost_ext_cost_0_fun(const real_t** arg, real_t** res, int* iw, real_t* w, void *mem);
 int {{ model.name }}_cost_ext_cost_0_fun_work(int *, int *, int *, int *);
 const int *{{ model.name }}_cost_ext_cost_0_fun_sparsity_in(int);
 const int *{{ model.name }}_cost_ext_cost_0_fun_sparsity_out(int);
-int {{ model.name }}_cost_ext_cost_0_fun_n_in();
-int {{ model.name }}_cost_ext_cost_0_fun_n_out();
+int {{ model.name }}_cost_ext_cost_0_fun_n_in(void);
+int {{ model.name }}_cost_ext_cost_0_fun_n_out(void);
 
 int {{ model.name }}_cost_ext_cost_0_fun_jac_hess(const real_t** arg, real_t** res, int* iw, real_t* w, void *mem);
 int {{ model.name }}_cost_ext_cost_0_fun_jac_hess_work(int *, int *, int *, int *);
 const int *{{ model.name }}_cost_ext_cost_0_fun_jac_hess_sparsity_in(int);
 const int *{{ model.name }}_cost_ext_cost_0_fun_jac_hess_sparsity_out(int);
-int {{ model.name }}_cost_ext_cost_0_fun_jac_hess_n_in();
-int {{ model.name }}_cost_ext_cost_0_fun_jac_hess_n_out();
+int {{ model.name }}_cost_ext_cost_0_fun_jac_hess_n_in(void);
+int {{ model.name }}_cost_ext_cost_0_fun_jac_hess_n_out(void);
 
 int {{ model.name }}_cost_ext_cost_0_fun_jac(const real_t** arg, real_t** res, int* iw, real_t* w, void *mem);
 int {{ model.name }}_cost_ext_cost_0_fun_jac_work(int *, int *, int *, int *);
 const int *{{ model.name }}_cost_ext_cost_0_fun_jac_sparsity_in(int);
 const int *{{ model.name }}_cost_ext_cost_0_fun_jac_sparsity_out(int);
-int {{ model.name }}_cost_ext_cost_0_fun_jac_n_in();
-int {{ model.name }}_cost_ext_cost_0_fun_jac_n_out();
+int {{ model.name }}_cost_ext_cost_0_fun_jac_n_in(void);
+int {{ model.name }}_cost_ext_cost_0_fun_jac_n_out(void);
+{% endif %}
+
+{% else %}
+int {{ cost.cost_function_ext_cost_0 }}(void **, void **, void *);
 {% endif %}
 
 #ifdef __cplusplus

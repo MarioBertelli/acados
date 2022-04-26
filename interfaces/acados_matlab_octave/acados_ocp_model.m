@@ -45,8 +45,10 @@ classdef acados_ocp_model < handle
             obj.model_struct = struct;
             % default values
             obj.model_struct.name = 'ocp_model';
-            obj.model_struct.ext_fun_type = 'casadi'; % generic
-            obj.model_struct.ext_fun_type_e = 'casadi'; % generic
+            obj.model_struct.cost_ext_fun_type = 'casadi'; % generic
+            obj.model_struct.cost_ext_fun_type_e = 'casadi'; % generic
+            obj.model_struct.cost_ext_fun_type_0 = 'casadi'; % generic
+            obj.model_struct.dyn_ext_fun_type = 'casadi'; % generic
             obj.model_struct.cost_type_0 = [];
             obj.model_struct.cost_type = 'auto';
             obj.model_struct.cost_type_e = 'auto';
@@ -97,22 +99,32 @@ classdef acados_ocp_model < handle
                     obj.model_struct.cost_expr_y_0 = value;
                 elseif (strcmp(field, 'cost_expr_ext_cost'))
                     obj.model_struct.cost_expr_ext_cost = value;
-                    obj.model_struct.ext_fun_type = 'casadi';
+                    obj.model_struct.cost_ext_fun_type = 'casadi';
+                elseif (strcmp(field, 'cost_expr_ext_cost_custom_hess'))
+                    obj.model_struct.cost_expr_ext_cost_custom_hess = value;
+                elseif (strcmp(field, 'cost_expr_ext_cost_custom_hess_e'))
+                    obj.model_struct.cost_expr_ext_cost_custom_hess_e = value;
                 elseif (strcmp(field, 'cost_expr_ext_cost_e'))
                     obj.model_struct.cost_expr_ext_cost_e = value;
-                    obj.model_struct.ext_fun_type_e = 'casadi';
+                    obj.model_struct.cost_ext_fun_type_e = 'casadi';
                 elseif (strcmp(field, 'cost_expr_ext_cost_0'))
                     obj.model_struct.cost_expr_ext_cost_0 = value;
-                    obj.model_struct.ext_fun_type_e = 'casadi';
+                    obj.model_struct.cost_ext_fun_type_0 = 'casadi';
+                elseif (strcmp(field, 'cost_ext_fun_type'))
+                    obj.model_struct.cost_ext_fun_type = value;
+                elseif (strcmp(field, 'cost_ext_fun_type_e'))
+                    obj.model_struct.cost_ext_fun_type_e = value;
+                elseif (strcmp(field, 'cost_ext_fun_type_0'))
+                    obj.model_struct.cost_ext_fun_type_0 = value;
                 elseif (strcmp(field, 'cost_source_ext_cost'))
                     obj.model_struct.cost_source_ext_cost = value;
-                    obj.model_struct.ext_fun_type = 'generic';
+                    obj.model_struct.cost_ext_fun_type = 'generic';
                 elseif (strcmp(field, 'cost_source_ext_cost_e'))
                     obj.model_struct.cost_source_ext_cost_e = value;
-                    obj.model_struct.ext_fun_type_e = 'generic';
+                    obj.model_struct.cost_ext_fun_type_e = 'generic';
                 elseif (strcmp(field, 'cost_source_ext_cost_0'))
                     obj.model_struct.cost_source_ext_cost_0 = value;
-                    obj.model_struct.ext_fun_type_0 = 'generic';
+                    obj.model_struct.cost_ext_fun_type_0 = 'generic';
                 elseif (strcmp(field, 'cost_function_ext_cost'))
                     obj.model_struct.cost_function_ext_cost = value;
                 elseif (strcmp(field, 'cost_function_ext_cost_e'))
@@ -191,6 +203,17 @@ classdef acados_ocp_model < handle
                     obj.model_struct.dyn_expr_f = value;
                 elseif (strcmp(field, 'dyn_expr_phi'))
                     obj.model_struct.dyn_expr_phi = value;
+                elseif (strcmp(field, 'dyn_ext_fun_type'))
+                    obj.model_struct.dyn_ext_fun_type = value;
+                elseif (strcmp(field, 'dyn_generic_source'))
+                    obj.model_struct.dyn_generic_source = value;
+                    obj.model_struct.dyn_ext_fun_type = 'generic';
+                elseif (strcmp(field, 'dyn_disc_fun_jac_hess'))
+                    obj.model_struct.dyn_disc_fun_jac_hess = value;
+                elseif (strcmp(field, 'dyn_disc_fun_jac'))
+                    obj.model_struct.dyn_disc_fun_jac = value;
+                elseif (strcmp(field, 'dyn_disc_fun'))
+                    obj.model_struct.dyn_disc_fun = value;
                 else
                     disp(['acados_ocp_model: set: wrong field: ', field]);
                     keyboard;
@@ -370,11 +393,7 @@ classdef acados_ocp_model < handle
             else
 
                 if (strcmp(field, 'name'))
-                    obj.model_struct.name = value;
-                elseif (strcmp(field, 'ext_fun_type'))
-                    obj.model_struct.ext_fun_type = value;
-                elseif (strcmp(field, 'ext_fun_type_e'))
-                    obj.model_struct.ext_fun_type_e = value;                    
+                    obj.model_struct.name = value;                    
                 elseif (strcmp(field, 'T'))
                     obj.model_struct.T = value;
                 else

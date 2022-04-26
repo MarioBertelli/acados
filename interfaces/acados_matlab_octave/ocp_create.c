@@ -107,7 +107,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     {
        MEX_MISSING_ARGUMENT(fun_name, "param_scheme_N");
     }
-    ocp_nlp_plan *plan = ocp_nlp_plan_create(N);
+    ocp_nlp_plan_t *plan = ocp_nlp_plan_create(N);
 
 
     // nlp solver
@@ -385,8 +385,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 #endif
     else
     {
-        MEX_FIELD_VALUE_NOT_SUPPORTED_SUGGEST(fun_name, "qp_solver", qp_solver,
-             "partial_condensing_hpipm, full_condensing_hpipm, full_condensing_qpoases, partial_condensing_osqp, partial_condensing_hpmpc, partial_condensing_qpdunes");
+        sprintf(buffer, "%s: field %s does not support %s, supported values are:\n%s%s\n\n%s\n%s",\
+            fun_name, "qp_solver", qp_solver,
+            "partial_condensing_hpipm, full_condensing_hpipm, full_condensing_qpoases, ",
+            "partial_condensing_osqp, partial_condensing_hpmpc, partial_condensing_qpdunes",
+            "NOTE: acados needs to be compiled explicitly with external QP solvers!",
+            "If the qp_solver value is listed as supported, please recompile acados with the desired QP solver.");
+        mexErrMsgTxt(buffer);
     }
 
 
@@ -675,7 +680,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     if (mxGetField( matlab_model, 0, "dim_nsbx_e" )!=NULL)
     {
         nsbx_e = mxGetScalar( mxGetField( matlab_model, 0, "dim_nsbx_e" ) );
-        ocp_nlp_dims_set_constraints(config, dims, N, "nsbx", &nsbx);
+        ocp_nlp_dims_set_constraints(config, dims, N, "nsbx", &nsbx_e);
     }
     // nsg
     if (mxGetField( matlab_model, 0, "dim_nsg" )!=NULL)
@@ -943,16 +948,44 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             ocp_nlp_solver_opts_set(config, opts, "alpha_min", &alpha_min);
             double alpha_reduction = mxGetScalar( mxGetField( matlab_opts, 0, "alpha_reduction" ) );
             ocp_nlp_solver_opts_set(config, opts, "alpha_reduction", &alpha_reduction);
+            double eps_sufficient_descent = mxGetScalar( mxGetField( matlab_opts, 0, "eps_sufficient_descent" ) );
+            ocp_nlp_solver_opts_set(config, opts, "eps_sufficient_descent", &eps_sufficient_descent);
+            int globalization_use_SOC = mxGetScalar( mxGetField( matlab_opts, 0, "globalization_use_SOC" ) );
+            ocp_nlp_solver_opts_set(config, opts, "globalization_use_SOC", &globalization_use_SOC);
+            int line_search_use_sufficient_descent = mxGetScalar( mxGetField( matlab_opts, 0, "line_search_use_sufficient_descent" ) );
+            ocp_nlp_solver_opts_set(config, opts, "line_search_use_sufficient_descent", &line_search_use_sufficient_descent);
         }
     }
     else
     {
         MEX_MISSING_ARGUMENT(fun_name, "globalization");
     }
+    int full_step_dual = mxGetScalar( mxGetField( matlab_opts, 0, "full_step_dual" ) );
+    ocp_nlp_solver_opts_set(config, opts, "full_step_dual", &full_step_dual);
 
 
     if (strcmp(dyn_type, "discrete"))
     {
+        // collocation_type
+        char *collocation_type = mxArrayToString( mxGetField( matlab_opts, 0, "collocation_type" ) );
+        sim_collocation_type collo_type;
+        if (!strcmp(collocation_type, "gauss_legendre"))
+        {
+            collo_type = GAUSS_LEGENDRE;
+        }
+        else if (!strcmp(collocation_type, "gauss_radau_iia"))
+        {
+            collo_type = GAUSS_RADAU_IIA;
+        }
+        else
+        {
+            MEX_FIELD_VALUE_NOT_SUPPORTED_SUGGEST(fun_name, "collocation_type", collocation_type, "gauss_legendre, gauss_radau_iia");
+        }
+        for (int ii=0; ii<N; ii++)
+        {
+            ocp_nlp_solver_opts_set_at_stage(config, opts, ii, "dynamics_collocation_type", &collo_type);
+        }
+
         // sim_method_num_stages
         sprintf(matlab_field_name, "sim_method_num_stages");
         const mxArray *matlab_array;
@@ -1094,7 +1127,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     // levenberg_marquardt regularization
     if (mxGetField( matlab_opts, 0, "levenberg_marquardt" )!=NULL)
     {
-        double levenberg_marquardt = mxGetScalar( mxGetField( matlab_opts, 0, "levenberg_marquardt" ) );
+        const mxArray *matlab_array;
+        sprintf(matlab_field_name, "levenberg_marquardt");
+        matlab_array = mxGetField( matlab_opts, 0, matlab_field_name );
+        int matlab_size = (int) mxGetNumberOfElements( matlab_array );
+        MEX_DIM_CHECK_VEC(fun_name, matlab_field_name, matlab_size, 1);
+        double levenberg_marquardt = mxGetScalar( matlab_array );
         ocp_nlp_solver_opts_set(config, opts, "levenberg_marquardt", &levenberg_marquardt);
     }
 
@@ -2028,8 +2066,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     const mxArray *Jsbx_e_matlab = mxGetField( matlab_model, 0, "constr_Jsbx_e" );
     if (Jsbx_e_matlab!=NULL)
     {
-        int nrow = (int) mxGetM( Jsbx_matlab );
-        int ncol = (int) mxGetN( Jsbx_matlab );
+        int nrow = (int) mxGetM( Jsbx_e_matlab );
+        int ncol = (int) mxGetN( Jsbx_e_matlab );
         MEX_DIM_CHECK_MAT(fun_name, "constr_Jsbx_e", nrow, ncol, nbx_e, nsbx_e);
 
         double *Jsbx_e = mxGetPr( mxGetField( matlab_model, 0, "constr_Jsbx_e" ) );

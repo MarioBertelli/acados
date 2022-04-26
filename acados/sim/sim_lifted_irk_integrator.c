@@ -165,11 +165,11 @@ int sim_lifted_irk_model_set(void *model_, const char *field, void *value)
 {
     lifted_irk_model *model = model_;
 
-    if (!strcmp(field, "impl_ode_fun"))
+    if (!strcmp(field, "impl_ode_fun") || !strcmp(field, "impl_dae_fun"))
     {
         model->impl_ode_fun = value;
     }
-    else if (!strcmp(field, "impl_ode_fun_jac_x_xdot_u"))
+    else if (!strcmp(field, "impl_ode_fun_jac_x_xdot_u") || !strcmp(field, "impl_dae_fun_jac_x_xdot_u"))
     {
         model->impl_ode_fun_jac_x_xdot_u = value;
     }
@@ -200,10 +200,7 @@ acados_size_t sim_lifted_irk_opts_calculate_size(void *config_, void *dims)
     size += ns_max * sizeof(double);           // b_vec
     size += ns_max * sizeof(double);           // c_vec
 
-    acados_size_t tmp0 = gauss_nodes_work_calculate_size(ns_max);
-    acados_size_t tmp1 = butcher_table_work_calculate_size(ns_max);
-    acados_size_t work_size = tmp0 > tmp1 ? tmp0 : tmp1;
-    size += work_size;  // work
+    size += butcher_tableau_work_calculate_size(ns_max);
 
     make_int_multiple_of(8, &size);
     size += 1 * 8;
@@ -229,11 +226,8 @@ void *sim_lifted_irk_opts_assign(void *config_, void *dims, void *raw_memory)
     assign_and_advance_double(ns_max, &opts->c_vec, &c_ptr);
 
     // work
-    acados_size_t tmp0 = gauss_nodes_work_calculate_size(ns_max);
-    acados_size_t tmp1 = butcher_table_work_calculate_size(ns_max);
-    acados_size_t work_size = tmp0 > tmp1 ? tmp0 : tmp1;
     opts->work = c_ptr;
-    c_ptr += work_size;
+    c_ptr += butcher_tableau_work_calculate_size(ns_max);
 
     assert((char *) raw_memory + sim_lifted_irk_opts_calculate_size(config_, dims) >= c_ptr);
 
@@ -247,34 +241,38 @@ void sim_lifted_irk_opts_initialize_default(void *config_, void *dims_, void *op
     sim_opts *opts = opts_;
     sim_lifted_irk_dims *dims = (sim_lifted_irk_dims *) dims_;
 
-    int nx = dims->nx;
-    int nu = dims->nu;
-    opts->ns = 3;  // GL 3
-    int ns = opts->ns;
-
-    assert(ns <= NS_MAX && "ns > NS_MAX!");
-
-    // set tableau size
-    opts->tableau_size = opts->ns;
-
-    // gauss collocation nodes
-    gauss_nodes(ns, opts->c_vec, opts->work);
-
-    // butcher tableau
-    butcher_table(ns, opts->c_vec, opts->b_vec, opts->A_mat, opts->work);
-
     // default options
-    opts->newton_iter = 1;
-    opts->scheme = NULL;
-    opts->num_steps = 1;
-    opts->num_forw_sens = nx + nu;
+    opts->newton_iter = 3;
+    // opts->scheme = NULL;
+    opts->num_steps = 2;
+    opts->num_forw_sens = dims->nx + dims->nu;
     opts->sens_forw = true;
     opts->sens_adj = false;
     opts->sens_hess = false;
-    opts->jac_reuse = false;
+    opts->jac_reuse = true;
+    opts->exact_z_output = false;
+    opts->ns = 3;
+    opts->collocation_type = GAUSS_LEGENDRE;
 
-    opts->output_z = false;
-    opts->sens_algebraic = false;
+    assert(opts->ns <= NS_MAX && "ns > NS_MAX!");
+
+    // butcher tableau
+    calculate_butcher_tableau(opts->ns, opts->collocation_type, opts->c_vec, opts->b_vec, opts->A_mat, opts->work);
+    // for consistency check
+    opts->tableau_size = opts->ns;
+
+    // TODO(oj): check if constr h or cost depend on z, turn on in this case only.
+    if (dims->nz > 0)
+    {
+        opts->output_z = true;
+        opts->sens_algebraic = true;
+    }
+    else
+    {
+        opts->output_z = false;
+        opts->sens_algebraic = false;
+    }
+
     return;
 }
 
@@ -284,18 +282,11 @@ void sim_lifted_irk_opts_update(void *config_, void *dims, void *opts_)
 {
     sim_opts *opts = opts_;
 
-    int ns = opts->ns;
+    assert(opts->ns <= NS_MAX && "ns > NS_MAX!");
 
-    assert(ns <= NS_MAX && "ns > NS_MAX!");
+    calculate_butcher_tableau(opts->ns, opts->collocation_type, opts->c_vec, opts->b_vec, opts->A_mat, opts->work);
 
-    // set tableau size
     opts->tableau_size = opts->ns;
-
-    // gauss collocation nodes
-    gauss_nodes(ns, opts->c_vec, opts->work);
-
-    // butcher tableau
-    butcher_table(ns, opts->c_vec, opts->b_vec, opts->A_mat, opts->work);
 
     return;
 }
@@ -420,6 +411,8 @@ void *sim_lifted_irk_memory_assign(void *config, void *dims_, void *opts_, void 
     assign_and_advance_blasfeo_dvec_mem(nu, memory->u, &c_ptr);
     blasfeo_dvecse(nu, 0.0, memory->u, 0);
 
+    // memory->init_K = 0;
+
     // TODO(andrea): need to move this to options.
     memory->update_sens = 1;
 
@@ -438,6 +431,33 @@ int sim_lifted_irk_memory_set(void *config_, void *dims_, void *mem_, const char
 
     printf("sim_lifted_irk_memory_set field %s is not supported! \n", field);
     exit(1);
+
+    // sim_config *config = config_;
+    // sim_lifted_irk_memory *mem = (sim_lifted_irk_memory *) mem_;
+    // if (!strcmp(field, "xdot_guess"))
+    // {
+    //     int nx;
+    //     config->dims_get(config_, dims_, "nx", &nx);
+    //     double *xdot = value;
+    //     blasfeo_pack_dvec(nx, xdot, 0, &mem->K[0], 0);
+    //     mem->init_K = 1;
+    // }
+    // else if (!strcmp(field, "guesses_blasfeo"))
+    // {
+    //     int nx, nz;
+    //     config->dims_get(config_, dims_, "nx", &nx);
+    //     config->dims_get(config_, dims_, "nz", &nz);
+
+    //     struct blasfeo_dvec *sim_guess = (struct blasfeo_dvec *) value;
+    //     blasfeo_dveccp(nx+nz, sim_guess, 0, &mem->K[0], 0);
+    //     mem->init_K = 1;
+    // }
+    // else
+    // {
+    //     printf("sim_lifted_irk_memory_set field %s is not supported! \n", field);
+    //     exit(1);
+    // }
+    // return ACADOS_SUCCESS;
 }
 
 
@@ -712,12 +732,29 @@ int sim_lifted_irk(void *config_, sim_in *in, sim_out *out, void *opts_, void *m
     double timing_ad = 0.0;
     out->info->LAtime = 0.0;
 
+    if (opts->sens_hess)
+    {
+        printf("LIFTED_IRK with HESSIAN PROPAGATION - NOT IMPLEMENTED YET - EXITING.");
+        exit(1);
+    }
     if (opts->sens_adj)
     {
         printf("LIFTED_IRK with ADJOINT SENSITIVITIES - NOT IMPLEMENTED YET - EXITING.");
         exit(1);
     }
 
+    // if (mem->init_K)
+    // {
+    //     for (ss = 0; ss < num_steps; ss++)
+    //     {
+    //         for (ii = 0; ii < ns; ii++)
+    //         {
+    //             if (!(ii == 0 && ss == 0))
+    //                 blasfeo_dveccp(nx, &mem->K[0], 0, &mem->K[ss], ii*nx);
+    //         }
+    //     }
+    //     mem->init_K = 0;
+    // }
 
     blasfeo_dgese(nx, nx, 0.0, J_temp_x, 0, 0);
     blasfeo_dgese(nx, nx, 0.0, J_temp_xdot, 0, 0);
