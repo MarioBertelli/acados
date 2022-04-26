@@ -200,7 +200,7 @@ void assign_and_advance_bool(int n, bool **v, char **ptr)
 
 void assign_and_advance_double(int n, double **v, char **ptr)
 {
-    assert((size_t) *ptr % 8 == 0 && "double not 8-byte aligned!");
+    assert((size_t) *ptr % acados_get_pointer_size() == 0 && "double not 8-byte aligned!");
 
 #ifdef _USE_VALGRIND_
     *v = (double *) acados_malloc(n, sizeof(double));

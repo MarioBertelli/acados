@@ -713,7 +713,7 @@ ocp_nlp_in *ocp_nlp_in_assign_self(int N, void *raw_memory)
     char *c_ptr = (char *) raw_memory;
 
     // initial align
-    align_char_to(8, &c_ptr);
+    //align_char_to(8, &c_ptr);
 
     // struct
     ocp_nlp_in *in = (ocp_nlp_in *) c_ptr;
